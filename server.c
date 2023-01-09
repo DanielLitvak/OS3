@@ -24,6 +24,7 @@ void getargs(int *port, int *_num_of_threads, int *queue_size, enum _schedalg *s
 
 int main(int argc, char *argv[])
 {
+    printf("server is running\n");
     int listenfd, num_of_threads, connfd, port, clientlen, queue_size;
     enum _schedalg alg;
     struct sockaddr_in clientaddr;

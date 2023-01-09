@@ -2,7 +2,6 @@
 #include <assert.h>
 #include "RingBuffer.h"
 #include "defenitions.h"
-#include "request.h"
 #include <sys/time.h>
 #include "segel.h"
 
@@ -28,15 +27,21 @@ void add_request(RingBuffer* ringbuffer, int fd)
 {
     struct timeval time;
     gettimeofday(&time, NULL);
+    printf("main thread trying to access lock\n");
     pthread_mutex_lock(&ringbuffer->lock);
+    printf("main thread got the lock\n");
     if (is_full(ringbuffer))
     {
+        printf("buffer is full\n");
         if(!handle_overload(ringbuffer, fd))
             return;
     }
+    printf("adding request\n");
     ringbuffer->array[ringbuffer->head].fd = fd;
     ringbuffer->array[ringbuffer->head].arrival = time;
-    advance_head(ringbuffer);
+    ringbuffer->head = (ringbuffer->head + 1) % ringbuffer->max_size;
+    ringbuffer->waiting++;
+    printf("signaling that the buffer is not empty\n");
     pthread_cond_signal(&ringbuffer->not_empty);
     pthread_mutex_unlock(&ringbuffer->lock);
 }
@@ -50,16 +55,14 @@ void remove_request(RingBuffer* ringbuffer)
 
 void advance_head(RingBuffer* ringbuffer)
 {
-    pthread_mutex_lock(&ringbuffer->lock);
     ringbuffer->head = (ringbuffer->head + 1) % ringbuffer->max_size;
-    pthread_mutex_unlock(&ringbuffer->lock);
 }
 
 void advance_tail(RingBuffer* ringbuffer)
 {
-    pthread_mutex_lock(&ringbuffer->lock);
+//    pthread_mutex_lock(&ringbuffer->lock);
     ringbuffer->tail = (ringbuffer->tail + 1) % ringbuffer->max_size;
-    pthread_mutex_unlock(&ringbuffer->lock);
+//    pthread_mutex_unlock(&ringbuffer->lock);
 }
 
 int is_full(RingBuffer* ringbuffer) // lock protected by outer function
@@ -86,13 +89,18 @@ int handle_overload(RingBuffer* ringbuffer, int fd) // lock protected by outer f
 {
     switch(ringbuffer->alg){
         case BLOCK:
-            while(is_full(ringbuffer))
+            while(is_full(ringbuffer)){
+                printf("main thread is waiting for space in the buffer\n");
                 pthread_cond_wait(&ringbuffer->not_full, &ringbuffer->lock);
+            }
+            printf("main thread received signal that there is space in the buffer\n");
             return 1;
         case DH:
+            printf("dropping the head to make space\n");
             Close(ringbuffer->array[ringbuffer->tail].fd);
             return 1;
         case DT:
+            printf("not enough space, dropping the the tail\n");
             Close(fd);
             return 0;
         case RANDOM:
