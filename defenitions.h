@@ -19,6 +19,7 @@ typedef struct{
     struct timeval arrival;
     struct timeval dispatch;
     Thread* thread_info;
+    int is_running;
 }Request;
 
 #endif //OS3_DEFENITIONS_H

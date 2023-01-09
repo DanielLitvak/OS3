@@ -43,6 +43,10 @@ void* handle_request(void * _arg){
         }
         printf("thread %d is handling the task\n", thread->id);
 
+        while(ringbuffer->array[ringbuffer->tail].is_running == 1)
+            advance_tail(ringbuffer);
+
+        ringbuffer->array[ringbuffer->tail].is_running = 1;
         Request request = ringbuffer->array[ringbuffer->tail];
         advance_tail(ringbuffer);
         ringbuffer->in_progress++;
