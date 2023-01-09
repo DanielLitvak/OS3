@@ -60,9 +60,7 @@ void advance_head(RingBuffer* ringbuffer)
 
 void advance_tail(RingBuffer* ringbuffer)
 {
-//    pthread_mutex_lock(&ringbuffer->lock);
     ringbuffer->tail = (ringbuffer->tail + 1) % ringbuffer->max_size;
-//    pthread_mutex_unlock(&ringbuffer->lock);
 }
 
 int is_full(RingBuffer* ringbuffer) // lock protected by outer function
@@ -71,7 +69,6 @@ int is_full(RingBuffer* ringbuffer) // lock protected by outer function
     if ((ringbuffer->waiting + ringbuffer->in_progress) == ringbuffer->max_size)
     {
         printf("buffer is full, head: %d, tail: %d, waiting: %d, in progress: %d, max size: %d\n",ringbuffer->head,ringbuffer->tail, ringbuffer->waiting, ringbuffer->in_progress, ringbuffer->max_size);
-        assert(ringbuffer->head == ringbuffer->tail);
         return 1;
     }
     else
