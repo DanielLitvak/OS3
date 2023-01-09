@@ -1,7 +1,9 @@
 #ifndef __REQUEST_H__
 
-struct Request;
+#include <sys/time.h>
+#include "ThreadPool.h"
+#include "defenitions.h"
 
-void requestHandle(struct Request request);
+void requestHandle(Request* request);
 
 #endif
