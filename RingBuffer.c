@@ -27,12 +27,12 @@ void add_request(RingBuffer* ringbuffer, int fd)
 {
     struct timeval time;
     gettimeofday(&time, NULL);
-    printf("main thread trying to access lock\n");
+//    printf("main thread trying to access lock\n");
     pthread_mutex_lock(&ringbuffer->lock);
-    printf("main thread got the lock\n");
+//    printf("main thread got the lock\n");
     if (is_full(ringbuffer))
     {
-        printf("buffer is full\n");
+//        printf("buffer is full\n");
         int status = handle_overload(ringbuffer, fd);
         if(!status)
         {
@@ -63,13 +63,13 @@ void add_request(RingBuffer* ringbuffer, int fd)
             }
         }
     }
-    printf("adding request\n");  // regular adding - works for regular & block
+//    printf("adding request\n");  // regular adding - works for regular & block
     ringbuffer->array[ringbuffer->head].fd = fd;
     ringbuffer->array[ringbuffer->head].arrival = time;
     ringbuffer->array[ringbuffer->head].is_running = 0;
     advance_head(ringbuffer);
     ringbuffer->waiting++;
-    printf("signaling that the buffer is not empty\n");
+//    printf("signaling that the buffer is not empty\n");
     pthread_cond_signal(&ringbuffer->not_empty);
     pthread_mutex_unlock(&ringbuffer->lock);
 }
@@ -96,7 +96,7 @@ int is_full(RingBuffer* ringbuffer) // lock protected by outer function
 
     if ((ringbuffer->waiting + ringbuffer->in_progress) == ringbuffer->max_size)
     {
-        printf("buffer is full, head: %d, tail: %d, waiting: %d, in progress: %d, max size: %d\n",ringbuffer->head,ringbuffer->tail, ringbuffer->waiting, ringbuffer->in_progress, ringbuffer->max_size);
+//        printf("buffer is full, head: %d, tail: %d, waiting: %d, in progress: %d, max size: %d\n",ringbuffer->head,ringbuffer->tail, ringbuffer->waiting, ringbuffer->in_progress, ringbuffer->max_size);
         return 1;
     }
     else
@@ -116,25 +116,25 @@ int handle_overload(RingBuffer* ringbuffer, int fd) // lock protected by outer f
     switch(ringbuffer->alg){
         case BLOCK:
             while(is_full(ringbuffer)){
-                printf("main thread is waiting for space in the buffer\n");
+//                printf("main thread is waiting for space in the buffer\n");
                 pthread_cond_wait(&ringbuffer->not_full, &ringbuffer->lock);
             }
-            printf("main thread received signal that there is space in the buffer\n");
+//            printf("main thread received signal that there is space in the buffer\n");
             return 1;
         case DH:
-            printf("dropping the head to make space\n");
+//            printf("dropping the head to make space\n");
             return 2;
         case DT:
-            printf("not enough space, dropping the incoming request\n");
+//            printf("not enough space, dropping the incoming request\n");
             Close(fd);
             return 0;
         case RANDOM:
             // TODO implement simple bonus
-            printf("not yet implemented schedule algorithm please turn back");
+//            printf("not yet implemented schedule algorithm please turn back");
             exit(1);
             break;
         default:
-            printf("unknown schedule algorithm how did you get here?");
+//            printf("unknown schedule algorithm how did you get here?");
             exit(1);
             break;
     }

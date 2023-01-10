@@ -34,14 +34,14 @@ void* handle_request(void * _arg){
     struct timeval time;
     while(1)
     {
-        printf("thread %d is trying to lock mutex\n", thread->id);
+//        printf("thread %d is trying to lock mutex\n", thread->id);
         pthread_mutex_lock(&ringbuffer->lock);
-        printf("thread %d succeeded to lock mutex\n", thread->id);
+//        printf("thread %d succeeded to lock mutex\n", thread->id);
         while(no_waiting_requests(ringbuffer)){
-            printf("thread %d is waiting for the buffer to have waiting requests\n", thread->id);
+//            printf("thread %d is waiting for the buffer to have waiting requests\n", thread->id);
             pthread_cond_wait(&ringbuffer->not_empty ,&ringbuffer->lock);
         }
-        printf("thread %d is handling the task\n", thread->id);
+//        printf("thread %d is handling the task\n", thread->id);
 
         while(ringbuffer->array[ringbuffer->tail].is_running == 1)
             advance_tail(ringbuffer);
