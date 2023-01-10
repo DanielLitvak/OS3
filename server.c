@@ -4,9 +4,9 @@
 
 void getargs(int *port, int *_num_of_threads, int *queue_size, enum _schedalg *schedalg, int argc, char *argv[])
 {
-    if (argc < 4) {
-	fprintf(stderr, "Usage: %s <port> <threads> <queue_size> <schedalg>\n", argv[0]);
-	exit(1);
+    if (argc < 5) {
+        fprintf(stderr, "Usage: %s <port> <threads> <queue_size> <schedalg>\n", argv[0]);
+        exit(1);
     }
     *port = atoi(argv[1]);
     *_num_of_threads = atoi(argv[2]);
@@ -15,7 +15,7 @@ void getargs(int *port, int *_num_of_threads, int *queue_size, enum _schedalg *s
         *schedalg = BLOCK;
     else if (strcmp(argv[4], "dt") == 0)
         *schedalg = DT;
-    else if (strcmp(argv[4], "ht") == 0)
+    else if (strcmp(argv[4], "dh") == 0)
         *schedalg = DH;
     else if (strcmp(argv[4], "random") == 0)
         *schedalg = RANDOM;
