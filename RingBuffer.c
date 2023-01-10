@@ -27,12 +27,9 @@ void add_request(RingBuffer* ringbuffer, int fd)
 {
     struct timeval time;
     gettimeofday(&time, NULL);
-//    printf("main thread trying to access lock\n");
     pthread_mutex_lock(&ringbuffer->lock);
-//    printf("main thread got the lock\n");
     if (is_full(ringbuffer))
     {
-//        printf("buffer is full\n");
         int status = handle_overload(ringbuffer, fd);
         if(!status)
         {
@@ -49,7 +46,7 @@ void add_request(RingBuffer* ringbuffer, int fd)
                 pthread_mutex_unlock(&ringbuffer->lock);
                 return;
             }
-            else {
+            else{
                 Close(ringbuffer->array[ringbuffer->tail].fd);
                 ringbuffer->array[ringbuffer->tail].fd = fd;
                 ringbuffer->array[ringbuffer->tail].arrival = time;
@@ -63,13 +60,11 @@ void add_request(RingBuffer* ringbuffer, int fd)
             }
         }
     }
-//    printf("adding request\n");  // regular adding - works for regular & block
     ringbuffer->array[ringbuffer->head].fd = fd;
     ringbuffer->array[ringbuffer->head].arrival = time;
     ringbuffer->array[ringbuffer->head].is_running = 0;
     advance_head(ringbuffer);
     ringbuffer->waiting++;
-//    printf("signaling that the buffer is not empty\n");
     pthread_cond_signal(&ringbuffer->not_empty);
     pthread_mutex_unlock(&ringbuffer->lock);
 }
@@ -96,7 +91,6 @@ int is_full(RingBuffer* ringbuffer) // lock protected by outer function
 
     if ((ringbuffer->waiting + ringbuffer->in_progress) == ringbuffer->max_size)
     {
-//        printf("buffer is full, head: %d, tail: %d, waiting: %d, in progress: %d, max size: %d\n",ringbuffer->head,ringbuffer->tail, ringbuffer->waiting, ringbuffer->in_progress, ringbuffer->max_size);
         return 1;
     }
     else
@@ -113,28 +107,56 @@ int no_waiting_requests(RingBuffer* ringbuffer)
 
 int handle_overload(RingBuffer* ringbuffer, int fd) // lock protected by outer function
 {
+	int amount_to_drop = (ringbuffer->waiting / 2) + (ringbuffer->waiting % 2);
     switch(ringbuffer->alg){
         case BLOCK:
             while(is_full(ringbuffer)){
-//                printf("main thread is waiting for space in the buffer\n");
+                //printf("main thread is waiting for space in the buffer\n");
                 pthread_cond_wait(&ringbuffer->not_full, &ringbuffer->lock);
             }
-//            printf("main thread received signal that there is space in the buffer\n");
+            //printf("main thread received signal that there is space in the buffer\n");
             return 1;
         case DH:
-//            printf("dropping the head to make space\n");
+            //printf("dropping the tail to make space\n");
             return 2;
         case DT:
-//            printf("not enough space, dropping the incoming request\n");
+            //printf("not enough space, dropping the incoming request\n");
             Close(fd);
             return 0;
         case RANDOM:
-            // TODO implement simple bonus
-//            printf("not yet implemented schedule algorithm please turn back");
-            exit(1);
-            break;
+            if(ringbuffer->waiting == 0)
+            {
+				Close(fd);
+				return 0;
+			}
+            for(int i = 0; i < amount_to_drop ; ++i)
+            {
+				int index_to_drop = rand() % ringbuffer->max_size;
+				while(ringbuffer->array[index_to_drop].is_running == 1 || ringbuffer->array[index_to_drop].is_running == 2)
+				{
+					index_to_drop = rand() % ringbuffer->max_size;
+				}
+				Close(ringbuffer->array[index_to_drop].fd);
+				ringbuffer->array[index_to_drop].is_running = 2;  // means request will be dropped
+			}
+			Request* new_array = (Request*) malloc(sizeof(Request) * ringbuffer->max_size);
+			int j = 0; // new_array index
+			for(int i = 0; i < ringbuffer->max_size; ++i)
+			{
+				if(ringbuffer->array[i].is_running != 2)
+				{
+					new_array[j] = ringbuffer->array[i];
+					++j;
+					ringbuffer->head = j;
+				}
+			}
+			free(ringbuffer->array);
+			ringbuffer->tail = 0;
+			ringbuffer->array = new_array;
+			ringbuffer->waiting -= amount_to_drop;
+			return 1;
         default:
-//            printf("unknown schedule algorithm how did you get here?");
+            //printf("unknown schedule algorithm how did you get here?");
             exit(1);
             break;
     }
