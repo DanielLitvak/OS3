@@ -9,11 +9,4 @@
 //	int dynamic_count;
 //};
 
-struct Request{
-	int fd;
-	struct timeval arrival;
-	struct timeval dispatch;
-	struct Thread* thread_info;
-};
-
 #endif
